@@ -13,30 +13,21 @@ export default function Home() {
   const [url, setUrl] = useState("");
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
 
-  const supabase = getSupabase();
-
-  // Fetch bookmarks
-  const fetchBookmarks = async () => {
-    const { data, error } = await supabase
-      .from("bookmarks")
-      .select("*")
-      .order("id", { ascending: false });
-
-    if (!error && data) {
-      setBookmarks(data);
-    }
-  };
-
-  // Add bookmark
-  const addBookmark = async () => {
-    if (!url) return;
-
-    await supabase.from("bookmarks").insert([{ url }]);
-    setUrl("");
-  };
-
-  // Load + Realtime
   useEffect(() => {
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    const fetchBookmarks = async () => {
+      const { data, error } = await supabase
+        .from("bookmarks")
+        .select("*")
+        .order("id", { ascending: false });
+
+      if (!error && data) {
+        setBookmarks(data);
+      }
+    };
+
     fetchBookmarks();
 
     const channel = supabase
@@ -54,6 +45,14 @@ export default function Home() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const addBookmark = async () => {
+    const supabase = getSupabase();
+    if (!supabase || !url) return;
+
+    await supabase.from("bookmarks").insert([{ url }]);
+    setUrl("");
+  };
 
   return (
     <div style={{ padding: "40px" }}>
@@ -77,7 +76,7 @@ export default function Home() {
       <ul style={{ marginTop: "30px" }}>
         {bookmarks.map((bookmark) => (
           <li key={bookmark.id}>
-            <a href={bookmark.url} target="_blank">
+            <a href={bookmark.url} target="_blank" rel="noopener noreferrer">
               {bookmark.url}
             </a>
           </li>
