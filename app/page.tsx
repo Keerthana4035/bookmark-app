@@ -18,18 +18,20 @@ export default function Home() {
     if (!supabase) return;
 
     const fetchBookmarks = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("bookmarks")
         .select("*")
         .order("id", { ascending: false });
 
-      if (data) setBookmarks(data);
+      if (!error && data) {
+        setBookmarks(data);
+      }
     };
 
     fetchBookmarks();
 
     const channel = supabase
-      .channel("bookmarks")
+      .channel("bookmarks-realtime")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "bookmarks" },
@@ -44,42 +46,91 @@ export default function Home() {
 
   const addBookmark = async () => {
     const supabase = getSupabase();
-    if (!supabase || !url) return;
+    if (!supabase || !url.trim()) return;
 
     await supabase.from("bookmarks").insert([{ url }]);
     setUrl("");
   };
 
-  return (
-    <div className="p-10">
-      <h1 className="text-2xl font-bold mb-4">Smart Bookmark App 🔖</h1>
+  const deleteBookmark = async (id: number) => {
+    const supabase = getSupabase();
+    if (!supabase) return;
 
-      <div className="flex gap-2">
+    await supabase.from("bookmarks").delete().eq("id", id);
+  };
+
+  return (
+    <div style={{ padding: "40px", fontFamily: "Arial" }}>
+      <h1 style={{ fontSize: "24px", marginBottom: "20px" }}>
+        Smart Bookmark App 🔖
+      </h1>
+
+      <div style={{ marginBottom: "20px" }}>
         <input
-          className="border p-2 rounded w-80"
+          type="text"
           placeholder="Enter URL"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
+          style={{
+            padding: "8px",
+            width: "300px",
+            border: "1px solid #ccc",
+            borderRadius: "4px",
+          }}
         />
+
         <button
-          className="bg-blue-500 text-white px-4 rounded"
           onClick={addBookmark}
+          style={{
+            marginLeft: "10px",
+            padding: "8px 16px",
+            backgroundColor: "#0070f3",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
         >
           Add
         </button>
       </div>
 
-      <ul className="mt-6 space-y-2">
+      <ul style={{ listStyle: "none", padding: 0 }}>
         {bookmarks.map((bookmark) => (
-          <li key={bookmark.id}>
+          <li
+            key={bookmark.id}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "10px",
+              padding: "8px",
+              border: "1px solid #eee",
+              borderRadius: "4px",
+            }}
+          >
             <a
               href={bookmark.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 underline"
+              style={{ textDecoration: "none", color: "#0070f3" }}
             >
               {bookmark.url}
             </a>
+
+            <button
+              onClick={() => deleteBookmark(bookmark.id)}
+              style={{
+                backgroundColor: "red",
+                color: "white",
+                border: "none",
+                padding: "6px 12px",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Delete
+            </button>
           </li>
         ))}
       </ul>
